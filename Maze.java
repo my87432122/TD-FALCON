@@ -34,12 +34,12 @@ public class Maze {
         refreshMaze( ag_num );
     }
 
-    public void set_conflict( int i, int j )//把两个冲突的状态
+    public void set_conflict( int i, int j )//对 agent i 用agent j 设为发生冲突而停止的 Agent
     {
-        avs[current[i][0]][current[i][1]] = 0;
-        end_state[i] = true;
+        avs[current[i][0]][current[i][1]] = 0;//这应该是把这个发生冲突的坐标置为0,表示在这个坐标上没有Agent了（如果有Agent 则avs[x][y]=Agent的编号）
+        end_state[i] = true;//把 i 和 j 设置为已经停止
         end_state[j] = true;
-        conflict_state[i] = true;
+        conflict_state[i] = true;//这一行暂时不动，为啥要设置两个 一个 end_state 一个 conflict_state？
         conflict_state[j] = true;
 //        current[i][0] = -1;
 //        current[i][1] = -1;
@@ -47,30 +47,30 @@ public class Maze {
 //        current[j][1] = -1;
     }
 
-    public boolean check_conflict( int i )
+    public boolean check_conflict( int i )//检查是否有与Agent i 冲突的Agent
     {
         int k;
  
-        if( ( current[i][0] == target[0] ) && ( current[i][1] == target[1] ) )
+        if( ( current[i][0] == target[0] ) && ( current[i][1] == target[1] ) )//如果Agent i的当前状态已经到达目的地，那么就不会冲突了
             return( false );
-        if( conflict_state[i] )
+        if( conflict_state[i] )//如果Agent i 已经被标记为停止了，就直接返回true
             return( true );
-        if( ( current[i][0] < 0 ) || ( current[i][1] < 0 ) )
+        if( ( current[i][0] < 0 ) || ( current[i][1] < 0 ) )//如果Agent i 当前的坐标为负数，那么代表就不会冲突
             return( false );
-        for( k = 0; k < agent_num; k++ )
+        for( k = 0; k < agent_num; k++ )//遍历所有的 Agent
         {
-            if( k == i )
+            if( k == i )//自己不会与自己冲突
                 continue;
-            if( ( current[k][0] == current[i][0] ) && ( current[k][1] == current[i][1] ) )
+            if( ( current[k][0] == current[i][0] ) && ( current[k][1] == current[i][1] ) )//如果两个 Agent 的坐标相等
             {
-                set_conflict( i, k );
+                set_conflict( i, k );//那么就把 i 和 j 两个Agent设置为冲突
                     return( true );
             }
          }
          return( false );
       }
 
-      public boolean check_conflict( int agt, int pos[], boolean actual )
+      public boolean check_conflict( int agt, int pos[], boolean actual )//这里又重载了一个函数，猜测应该是在pos[0],pos[1]这个坐标处？？还是不懂
       {
         int k;
  
@@ -104,17 +104,17 @@ public class Maze {
         else
             agent_num = agt;
         current = new int[agent_num][];
-        target = new int[2];
+        target = new int[2];//就是旗子的坐标
         prev_current = new int[agent_num][];
-        currentBearing = new int[agent_num];
-        prev_bearing = new int[agent_num];
-        targetBearing = new int[agent_num];
-        avs = new int[size][size];
+        currentBearing = new int[agent_num];//所有Agent的当前方向
+        prev_bearing = new int[agent_num];//所有Agnet之前的方向
+        targetBearing = new int[agent_num];//所有Agent期望的目标方向
+        avs = new int[size][size];//avs到底是什么，和地图大小一样的二维数组
         mines = new int[size][size];
-        end_state = new boolean[agent_num];
-        conflict_state = new boolean[agent_num];
+        end_state = new boolean[agent_num];//判断Agent是否已经停止了
+        conflict_state = new boolean[agent_num];//判断Agent是否发生了冲突
 
-        sonar = new double[agent_num][];
+        sonar = new double[agent_num][];//先初始化第一维
         av_sonar = new double[agent_num][];
 
         for( k = 0; k < agent_num; k++ )
@@ -123,8 +123,8 @@ public class Maze {
             prev_current[k] = new int[2];
             end_state[k] = false;
             conflict_state[k] = false;
-            sonar[k] = new double[5];
-            av_sonar[k] = new double[5];
+            sonar[k] = new double[5];//五个方向的声纳探测输入信号
+            av_sonar[k] = new double[5];//现在暂时没理解sonar和av_sonar的区别
         }
         
         for( k = 0; k < 3; k++ ) {
@@ -135,7 +135,7 @@ public class Maze {
             for (int j=0; j<size; j++)
                 avs[i][j] = 0;
                 
-        for( k = 0; k < agent_num; k++ )
+        for( k = 0; k < agent_num; k++ )//给每个Agent都随机生成一个初始位置
         {
             do
             {
@@ -146,10 +146,10 @@ public class Maze {
             }
             while( avs[x][y] > 0 );
 
-            avs[x][y] = k + 1;
+            avs[x][y] = k + 1;//在地图上标出来Agent的位置
 
             for( w = 0; w < 2; w++ )
-                prev_current[k][w] = current[k][w];
+                prev_current[k][w] = current[k][w];//之前的位置状态也标记成这个，反正是初始化无所谓的
 
             end_state[k] = false;
             conflict_state[k] = false;
@@ -162,11 +162,11 @@ public class Maze {
             target[1] = y;
         } while ( avs[x][y] > 0 );
             
-        for (int i=0; i<size; i++)
+        for (int i=0; i<size; i++)//初始化雷区，
             for (int j=0; j<size; j++)
                 mines[i][j] = 0;
                 
-        for( int i = 0; i < numMines; i++ ) 
+        for( int i = 0; i < numMines; i++ ) //初始化雷的位置
         {
             do 
             {
@@ -176,19 +176,19 @@ public class Maze {
             while( ( avs[x][y] > 0 ) || ( mines[x][y] == 1 ) || ( x == target[0] && y == target[1] ) );
             mines[x][y] = 1;
         }
-        for( int a = 0; a < agent_num; a++ )
+        for( int a = 0; a < agent_num; a++ )//禁止套娃！！调整所有Agent的方向为朝向旗子的一侧，只初始为上下左右
         {
             this.setCurrentBearing( a, this.adjustBearing( this.getTargetBearing( a ) ) );
             prev_bearing[a] = this.currentBearing[a];
         }
     }
-
+//————————————————————————————————————2019.12.18——————————————————————————
     public int adjustBearing( int old_bearing )
     {
         if( ( old_bearing == 1 ) || ( old_bearing == 7 ) )
-            return( 0 );
+            return( 0 );//右上左上都归为上
         if( ( old_bearing == 3 ) || ( old_bearing == 5 ) )
-            return( 4 );
+            return( 4 );//右下左下都归为下
         return( old_bearing );
     }
 
@@ -202,22 +202,22 @@ public class Maze {
         d[0] = target[0] - current[i][0];
         d[1] = target[1] - current[i][1];
         
-        if( d[0] == 0 && d[1] < 0 ) 
-            return( 0 );
+        if( d[0] == 0 && d[1] < 0 )//我是以左上角为坐标系向下向右建立坐标轴
+            return( 0 );//向上
         if( d[0] > 0 && d[1] < 0 ) 
-            return( 1 );
+            return( 1 );//右上
         if( d[0] > 0 && d[1] == 0 ) 
-            return( 2 );
+            return( 2 );//右
         if( d[0] > 0 && d[1] > 0 )  
-            return( 3 );
+            return( 3 );//右下
         if( d[0] == 0 && d[1] > 0 )  
-            return( 4 );
+            return( 4 );//下
         if( d[0] < 0 && d[1] > 0 )  
-            return( 5 );
+            return( 5 );//左下
         if( d[0] < 0 && d[1] == 0 ) 
-            return( 6 );
+            return( 6 );//左
         if( d[0] < 0 && d[1] < 0 )  
-            return( 7 );
+            return( 7 );//左上
         return( 0 );
     }
 
