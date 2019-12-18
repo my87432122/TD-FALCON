@@ -15,7 +15,7 @@ public class Maze {
 
     private int agent_num;//Agent的数量
 
-    private int[][] current;//这个第二维应该就两个[0][1]
+    private int[][] current;
     private int[][] prev_current;
     private int[] target;
     private int[] currentBearing;//现在的方位
@@ -28,13 +28,13 @@ public class Maze {
 
     private int[][] avs;
     private boolean[] end_state;    
-    private boolean[] conflict_state;//冲突状态记录
+    private boolean[] conflict_state;   
 
-    public Maze ( int ag_num ) {//这个应该是更改Agent个数后刷新地图的函数吧
+    public Maze ( int ag_num ) {
         refreshMaze( ag_num );
     }
 
-    public void set_conflict( int i, int j )//把两个冲突的状态
+    public void set_conflict( int i, int j )
     {
         avs[current[i][0]][current[i][1]] = 0;
         end_state[i] = true;
