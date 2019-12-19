@@ -2,7 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.io.*;
-
+//test push in another branch
 public class Maze {
     //final  int size=200;
     final  int size=16;  //地图大小,Final修饰的成员变量终身不变，并且必须提前赋值
