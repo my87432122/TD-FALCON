@@ -438,7 +438,7 @@ public class Maze {
         return;
     }
     
-    public void getAVSonar( int agt, double [] new_av_sonar ) 
+    public void getAVSonar( int agt, double [] new_av_sonar ) //获取视野内的agent的距离
     {
         int r;
         int x = current[agt][0];
@@ -447,14 +447,14 @@ public class Maze {
         if( ( x < 0 ) || ( y < 0 ) )
         {
             for (int k=0; k<5; k++) 
-                new_av_sonar[k] = 0;
+                new_av_sonar[k] = 0;//初始化 av_sonar
             return;
         }
         
         double[] aSonar = new double[8];
         
         r=0;
-        while( y-r>=0 && (avs[x][y-r]==(agt+1) || avs[x][y-r]==0) )
+        while( y-r>=0 && (avs[x][y-r]==(agt+1) || avs[x][y-r]==0) )//
             r++;
         if (r==0)
             aSonar[0] = (double)0.0;
@@ -522,7 +522,7 @@ public class Maze {
         for (int k=0; k<5; k++) {
             new_av_sonar[k] = aSonar[(currentBearing[agt]+6+k)%8];
             if( binarySonar )
-                if( new_av_sonar[k] < 1 )
+                if( new_av_sonar[k] < 1 )//只要
                     new_av_sonar[k] = 0; // binary sonar signal
         }
         return;             
