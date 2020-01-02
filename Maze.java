@@ -69,7 +69,7 @@ public class Maze {
          return( false );
       }
 
-      public boolean check_conflict( int agt, int pos[], boolean actual )//这里又重载了一个函数，猜测应该是在pos[0],pos[1]这个坐标处？？还是不懂
+      public boolean check_conflict( int agt, int pos[], boolean actual )//这里又重载了一个函数，猜测应该是在pos[0],pos[1]这个坐标处？？还是不懂,这里的actual是判断是不是真正移动，是virtual_move or actual move
       {
         int k;
         //我猜测应该是 Agt这个agent在pos[0]pos[1]这个位置，检查有么有其他的Agent也在这个位置
@@ -79,7 +79,7 @@ public class Maze {
                 continue;
             if( ( current[k][0] == pos[0] ) && ( current[k][1] == pos[1] ) )
             {
-                if( actual )
+                if( actual )//如果是真的移动那就意味着两个agent发生撞击了
                 {
                     set_conflict( agt, k );
                 }
@@ -263,10 +263,10 @@ public class Maze {
             
         if( mines[x][y] == 1 )       // hit mines
             return( 0 );
-        
-//        if( check_conflict( agt, pos, actual ) )
-//            return( 0 );
-        
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>这里去除了注释，我感觉如果检测到agt，在这个pos[0]pos[1]位置上，已经发生冲突停止了，那么应该不会获得奖励
+       if( check_conflict( agt, pos, actual ) )
+           return( 0 );
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>如果程序出错了，那么可能就是因为这里>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  
         if( immediate) {//如果不是即时奖励，那么一个trial结束后就不会得到基于与target的距离的Reward
         	if (RewardType==LINEAR) {
         	   	int r = getRange( agt );
@@ -447,22 +447,22 @@ public class Maze {
         if( ( x < 0 ) || ( y < 0 ) )
         {
             for (int k=0; k<5; k++) 
-                new_av_sonar[k] = 0;//初始化 av_sonar
+                new_av_sonar[k] = 0;//初始化当前Agent的五个感知信号的输入
             return;
         }
         
-        double[] aSonar = new double[8];
+        double[] aSonar = new double[8];//初始化八个方向的探测Agent的声纳信号
         
         r=0;
-        while( y-r>=0 && (avs[x][y-r]==(agt+1) || avs[x][y-r]==0) )//
+        while( y-r>=0 && (avs[x][y-r]==(agt+1) || avs[x][y-r]==0) )//y-r>=0限制有没有到墙边，程序里的Agent的编号是0-7，实际编号为1-8，这里的Agt+1就是指本身，向上探测，看是否有其余的Agent
             r++;
         if (r==0)
-            aSonar[0] = (double)0.0;
+            aSonar[0] = (double)0.0;//
         else
             aSonar[0] = (double)1.0/(double)r;
         
         r=0;
-        while (x+r<=size-1 && y-r>=0 && ( avs[x+r][y-r]==(agt+1) || avs[x+r][y-r]==0 ) )
+        while (x+r<=size-1 && y-r>=0 && ( avs[x+r][y-r]==(agt+1) || avs[x+r][y-r]==0 ) )//右上
             r++;
         if (r==0)
             aSonar[1] = (double)0.0;
@@ -470,7 +470,7 @@ public class Maze {
             aSonar[1] = (double)1.0/(double)r;
 
         r=0;
-        while (x+r<=size-1 && ( avs[x+r][y]==(agt+1) || avs[x+r][y]==0 ) )
+        while (x+r<=size-1 && ( avs[x+r][y]==(agt+1) || avs[x+r][y]==0 ) )//右侧
             r++;
         if (r==0)
             aSonar[2] = (double)0.0;
@@ -478,7 +478,7 @@ public class Maze {
             aSonar[2] = (double)1.0/(double)r;
         
         r=0;
-        while (x+r<=size-1 && y+r<=size-1 && ( avs[x+r][y+r]==(agt+1) || avs[x+r][y+r]==0 ) )
+        while (x+r<=size-1 && y+r<=size-1 && ( avs[x+r][y+r]==(agt+1) || avs[x+r][y+r]==0 ) )//右下
             r++;
         if (r==0)
             aSonar[3] = (double)0.0;
@@ -486,7 +486,7 @@ public class Maze {
             aSonar[3] = (double)1.0/(double)r;
             
         r=0;
-        while (y+r<=size-1 && ( avs[x][y+r]==(agt+1) || avs[x][y+r]==0 ) )
+        while (y+r<=size-1 && ( avs[x][y+r]==(agt+1) || avs[x][y+r]==0 ) )//下
             r++;
         if (r==0)
             aSonar[4] = (double)0.0;
@@ -494,7 +494,7 @@ public class Maze {
             aSonar[4] = (double)1.0/(double)r;
         
         r=0;
-        while (x-r>=0 && y+r<=size-1 && ( avs[x-r][y+r]==(agt+1) || avs[x-r][y+r]==0 ) )
+        while (x-r>=0 && y+r<=size-1 && ( avs[x-r][y+r]==(agt+1) || avs[x-r][y+r]==0 ) )//左下
             r++;
         if (r==0)
             aSonar[5] = (double)0.0;
@@ -502,7 +502,7 @@ public class Maze {
             aSonar[5] = (double)1.0/(double)r;
 
         r=0;
-        while (x-r>=0 && ( avs[x-r][y]==(agt+1) || avs[x-r][y]==0 ) )
+        while (x-r>=0 && ( avs[x-r][y]==(agt+1) || avs[x-r][y]==0 ) )//左
             r++;
         if (r==0)
             aSonar[6] = (double)0.0;
@@ -510,7 +510,7 @@ public class Maze {
             aSonar[6] = (double)1.0/(double)r;
         
         r=0;
-        while (x-r>=0 && y-r>=0 && ( avs[x-r][y-r]==(agt+1) || avs[x-r][y-r]==0 ) )
+        while (x-r>=0 && y-r>=0 && ( avs[x-r][y-r]==(agt+1) || avs[x-r][y-r]==0 ) )//左上
             r++;
         if (r==0)
             aSonar[7] = (double)0.0;
@@ -520,18 +520,18 @@ public class Maze {
         currentBearing = getCurrentBearing ();
             
         for (int k=0; k<5; k++) {
-            new_av_sonar[k] = aSonar[(currentBearing[agt]+6+k)%8];
-            if( binarySonar )
-                if( new_av_sonar[k] < 1 )//只要
+            new_av_sonar[k] = aSonar[(currentBearing[agt]+6+k)%8];//方向转换，这里的+6要谨慎对待，可以替换为-2，不过不同的编译器对于负数求余的认知不同，还是尽量使用正数求余
+            if( binarySonar )//二值化输入的声纳信号，只有0和1
+                if( new_av_sonar[k] < 1 )//
                     new_av_sonar[k] = 0; // binary sonar signal
         }
         return;             
     }
-    
-    public void virtual_move( int agt, int d, int [] res ) 
+    //这个virtual_move函数用于虚拟执行下一步的行走以计算奖励，不实际改变方向和坐标，而把虚拟行走后的坐标存入res[0]&&res[1]中
+    public void virtual_move( int agt, int d, int [] res ) //Agent的虚拟行走函数，一次行走1，agt为Agent的编号，d为要前进的方向（d为相对方向，d的取值应为-2 -1 0 1 2），res为Agt对于Agent的坐标
     {
         int k;
-        int bearing = ( currentBearing[agt] + d + 8 ) % 8;
+        int bearing = ( currentBearing[agt] + d + 8 ) % 8;//计算按d行走后的绝对方向
 
         res[0] = current[agt][0];
         res[1] = current[agt][1];
@@ -588,14 +588,14 @@ public class Maze {
         return;
     }
 
-    public void turn( int i, int d )
+    public void turn( int i, int d )//转向，这个函数后面没有使用
     {
         int bearing = getCurrentBearing( i );
         bearing = ( bearing + d ) % 8;
         setCurrentBearing( i, bearing );
     }
 
-    public int move( int i, int d ) {
+    public int move( int i, int d ) {//这是Agent实际的移动函数,d为相对方向，移动成功就返回1，移动不成功就返回-1 
         int k;
 
         if( ( current[i][0] < 0 ) || ( current[i][1] < 0 ) )
@@ -696,7 +696,7 @@ public class Maze {
     
     
 	// return true if the move still keeps the agent within the field 检查是否超出边界
-    public boolean withinField ( int i, int d ) {
+    public boolean withinField ( int i, int d ) {//检测AGent i 还能否在 相对方向d 上继续移动
         int testBearing;
         
         testBearing = ( currentBearing[i] + d + 8 ) % 8;
@@ -738,7 +738,7 @@ public class Maze {
         return (false);
     }
     
-    public int [] move( int [] d )
+    public int [] move( int [] d )//一次移动所有的Agent
     {
         int k;
         int [] res;
@@ -749,7 +749,7 @@ public class Maze {
         return res;
     }
 
-    public void undoMove(){
+    public void undoMove(){//取消上次的移动
         this.currentBearing=this.prev_bearing;
         current[0] = prev_current[0];
         current[1] = prev_current[1];   
@@ -760,34 +760,34 @@ public class Maze {
         double r;
         int [] next_pos = new int[2];
 
-        virtual_move( agt, d, next_pos );
+        virtual_move( agt, d, next_pos );//next_pos接收虚拟移动后agt的坐标
         r = this.getReward( agt, next_pos, false, immediate ); //consider revise
         // this.undoMove();
         return r;
     }
 
-    public boolean endState( int agt )
+    public boolean endState( int agt )//修改并返回agt的end_state 用于判断当前agt是否已经停止
     {
         int x = current[agt][0];
         int y = current[agt][1];
 
-        if( conflict_state[agt] )
+        if( conflict_state[agt] )//agt已经发生冲突了
         {
             end_state[agt] = true;  
             return( end_state[agt] );
         }
-        if( ( x < 0 ) || ( y < 0 ) )
+        if( ( x < 0 ) || ( y < 0 ) )//出界了
         {
             end_state[agt] = true;  
             return( end_state[agt] );
         }
-        if( ( x == target[0] ) && ( y == target[1] ) )
+        if( ( x == target[0] ) && ( y == target[1] ) )//到达终点了
         {
             end_state[agt] = true;
             avs[x][y] = 0;
             return( end_state[agt] );
         }
-        if( ( mines[x][y] == 1 ) || ( check_conflict( agt ) ) || ( end_state[agt] ) )
+        if( ( mines[x][y] == 1 ) || ( check_conflict( agt ) ) || ( end_state[agt] ) )// 踩雷||检测冲突||agt已经停止
         {
             avs[x][y] = 0;
             end_state[agt] = true;
@@ -797,18 +797,17 @@ public class Maze {
         return( end_state[agt] );
     }
 
-	public boolean endState( boolean target_moving )
+	public boolean endState( boolean target_moving )//这个函数用于检测 target_moving 模式下 是否所有的Agent都停止工作了，如果是的话返回true;
 	{
 		int k;
-		boolean bl = true;
-
+		boolean bl = true;//这一参数是用来当target是移动的时候，返回Agent k 当前是否已经进入endState
 		for( k = 0; k < agent_num; k++ )
 		{
 			if( target_moving )
 			{
 				if( isHitTarget( k ) )
 					return( true );
-				if( !endState( k ) )
+				if( !endState( k ) )//如果Agent k 还没有停止
 					bl = false;
 			}
 			else
@@ -823,7 +822,7 @@ public class Maze {
 			return( true );
 	}
 
-    public boolean endState()
+    public boolean endState()//这个函数用于检测普通模式下是否所有的Agent都停止运动了，如果有Agent尚未！endState(k) 则 返回false
     {
         int k;
 
@@ -835,7 +834,7 @@ public class Maze {
         return( true );
     }
 
-    public boolean isHitMine( int i )
+    public boolean isHitMine( int i )//判断是否踩雷，踩雷就返回true
     {
         if( ( current[i][0] < 0 ) || ( current[i][1] < 0 ) )
             return( false );
@@ -845,12 +844,12 @@ public class Maze {
             return false;
     }
 
-    public boolean isConflict( int i )
+    public boolean isConflict( int i )//判断i是否发生冲突
     {
         return( conflict_state[i] );
     }
 
-    public boolean isHitTarget( int i )
+    public boolean isHitTarget( int i )//在target_move模式下判断是否已经到达目标
     {
         if( ( current[i][0] == target[0] ) && ( current[i][1] == target[1] ) )
             return true;
@@ -858,7 +857,7 @@ public class Maze {
             return false;
     }
 
-    public boolean test_mines( int i, int j ) 
+    public boolean test_mines( int i, int j ) //判断坐标(i,j)是否有雷
     {
         if( mines[i][j] == 1 )
             return( true );
@@ -866,14 +865,14 @@ public class Maze {
             return( false );
     }
 
-    public boolean test_current( int agt, int i, int j ) {
+    public boolean test_current( int agt, int i, int j ) {//判断agt当前的坐标是不是(i,j)
         if ( current[agt][0] == i && current[agt][1] == j )
             return( true );
         else
             return( false );
         }
 
-    public boolean test_target( int i, int j ) 
+    public boolean test_target( int i, int j ) //判断当前target的坐标是不是（i，j）
     {
         if( ( target[0] == i ) && ( target[1] == j ) )
             return( true );
@@ -881,31 +880,30 @@ public class Maze {
             return( false );
     }
 
-    public int getMines( int i, int j ) 
+    public int getMines( int i, int j ) //获得当前坐标是否有雷
     {
         return( mines[i][j] );
     }
 
-    public int [] getCurrent( int agt ) 
+    public int [] getCurrent( int agt ) //获取当前agt的坐标
     {
         return( current[agt] );
     }
 
-    public int [][] getCurrent() 
+    public int [][] getCurrent() //获取当前所有agt的坐标
     {
         return( current );
     }
 
-    public void getCurrent( int agt, int [] path ) 
+    public void getCurrent( int agt, int [] path ) //把agt的坐标存入path[]
     {
         int k;
-
         for( k = 0; k < 2; k++ )
             path[k] = current[agt][k];
         return;
     }
 
-    public void getCurrent( int [][] path ) 
+    public void getCurrent( int [][] path )//把所有agt的坐标存入path[][] 
     {
         int i, j;
 
@@ -938,18 +936,18 @@ public class Maze {
 		double d;
 
 		for( k = 0; k < 3; k++ )
-			d = Math.random();
+			d = Math.random();//random()随机[0,1]内
 		do
 		{
-			b = ( int )( Math.random() * size );
+			b = ( int )( Math.random() * size );//在0-15随机去一个数，这里的范围大于8的原因是target不会每一个时刻都在动，可以
 			virtual_move_target( b, new_pos );
 		}
-		while( !valid_target_pos( new_pos ) );
+		while( !valid_target_pos( new_pos ) );//如果virtual_move_target移动后的结果满足要求，则就移动target
 		move_target( b );
 		return;
 	}
 
-	public boolean valid_target_pos( int [] new_pos )
+	public boolean valid_target_pos( int [] new_pos )//判断这个坐标是否可用
 	{
 		int x = new_pos[0];
 		int y = new_pos[1];
@@ -965,7 +963,7 @@ public class Maze {
 		return( true );
 	}
 
-	public void virtual_move_target( int d, int [] new_pos )
+	public void virtual_move_target( int d, int [] new_pos )//
 	{
 		new_pos[0] = target[0];
 		new_pos[1] = target[1];
