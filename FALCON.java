@@ -5,9 +5,9 @@ import java.text.*;
 public class FALCON extends AGENT {
     final   int   numSpace=4; // 0-State 1-Action 2-Reward 3-New State 
     final   int   numSonarInput=10;
-    final   int   numAVSonarInput=0;
+    final   int   numAVSonarInput=0;//就一个agent所以没有AVSonarInput
     final   int   numBearingInput=8;
-    final   int   numRangeInput=0;
+    final   int   numRangeInput=0;//暂时不知道这个numRangeInput是什么意思，难道是不同的agent之间的距离?
     final   int   numAction=5;
     final   int   numReward=2;
     final   int   complementCoding=1;
@@ -20,40 +20,40 @@ public class FALCON extends AGENT {
     final static int RFALCON =0;
     final static int TDFALCON=1;
     
-    final   int   FUZZYART=0;
+    final   int   FUZZYART=0;//模糊ART神经网络
     final   int   ART2    =1;
     
     final   int   PERFORM =0;
     final   int   LEARN   =1;
     final   int   INSERT  =2;
     
-    private int[]      numInput;
-    private int        numCode;
+    private int[]      numInput;//
+    private int        numCode;//暂时没懂什么意思
     private double     prevReward=0;
-    private double[][] activityF1;
-    private double[]   activityF2;
+    private double[][] activityF1;//FAlcon的第一层，是一个二维，结点一共有三个输入Field，每个区域的大小分别为18，5，2
+    private double[]   activityF2;//Falcon的第二层，是一个一维的(y1,y2,y3......)，大小为F2层所有的结点数
     private double[][][] weight; 
-    private int        J;
+    private int        J;//这个是啥玩意???
     private int        KMax=3;
     private boolean[]  newCode;
     private double[]   confidence; 
     
     private double initConfidence=(double)0.5;
     private double reinforce_rate=(double)0.5;
-    private double penalize_rate=(double)0.2;
-    private double decay_rate=(double)0.0005;
-    private double threshold=(double)0.01;
-    private int    capacity=9999;
+    private double penalize_rate=(double)0.2;//处罚率
+    private double decay_rate=(double)0.0005;//衰减率
+    private double threshold=(double)0.01;//阈值
+    private int    capacity=9999;//最大的结点数
     
-    private double beta=(double)1.0;
-    private double epilson=(double)0.001;
-    private double gamma[]={(double)1.0, (double)1.0,(double)1.0,(double)0.0};    
+    private double beta=(double)1.0;//β
+    private double epilson=(double)0.001;//ε
+    private double gamma[]={(double)1.0, (double)1.0,(double)1.0,(double)0.0};//γ 
     
-    // Action enumeration
+    // Action enumeration，动作枚举
      
-    private double alpha[]={(double)0.1,(double)0.1,(double)0.1};
-    private double b_rho[]={(double)0.2,(double)0.2,(double)0.5,(double)0.0}; // fuzzy ART baseline vigilances
-    private double p_rho[]={(double)0.0,(double)0.0,(double)0.0,(double)0.0}; // fuzzy ART performance vigilances
+    private double alpha[]={(double)0.1,(double)0.1,(double)0.1};//这个是αk，选择参数 choice parameters
+    private double b_rho[]={(double)0.2,(double)0.2,(double)0.5,(double)0.0}; // fuzzy ART baseline vigilances  β_ρ
+    private double p_rho[]={(double)0.0,(double)0.0,(double)0.0,(double)0.0}; // fuzzy ART performance vigilances  p_ρ ???这个参数目前还不知道什么意思
     
     // Direct Access
 	/*
@@ -85,47 +85,47 @@ public class FALCON extends AGENT {
        
     private NumberFormat df = NumberFormat.getInstance();   //返回当前默认语言环境的通用数值格式
 		
-    public FALCON ( int av_num ) {
+    public FALCON ( int av_num ) {//初始化函数
     	
     	df.setMaximumFractionDigits (1);    //返回数的小数部分所允许的最大位数
     	
         agentID = av_num;
-        numInput = new int[numSpace];   //// numSpace:0-State 1-Action 2-Reward 3-New State
-        numInput[0] = numSonarInput+numAVSonarInput+numBearingInput+numRangeInput;
-        numInput[1] = numAction;
-        numInput[2] = numReward;
+        numInput = new int[numSpace];   // numSpace:0-State 1-Action 2-Reward 3-New State 
+        numInput[0] = numSonarInput+numAVSonarInput+numBearingInput+numRangeInput;//10+0+8+0
+        numInput[1] = numAction;//5
+        numInput[2] = numReward;//2
         numInput[3] = numInput[0];
-        
-        activityF1 = new double[numSpace][];
+
+        activityF1 = new double[numSpace][];//结点F共有四部分，0-State 1-Action 2-Reward 3-New State ，每一部分的长度分别为 18 5 2 0
         for (int i=0; i<numSpace; i++)
             activityF1[i] = new double[numInput[i]];
-            
-        numCode = 0;
-        newCode = new boolean[numCode+1];
-        newCode[0] = true;
+//————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————2020.1.2——————————————————————————————————————————
+        numCode = 0;//暂时没懂numCode是什么意思, 意思难道是记录目前F2层有多少结点? 
+        newCode = new boolean[numCode+1];//newCode是一个布尔值
+        newCode[0] = true;//?
         
-        confidence = new double[numCode+1];
-        confidence[0] = initConfidence;
+        confidence = new double[numCode+1];//?
+        confidence[0] = initConfidence;//initConfidence=0.5,initConfidence是Q值的意思?
         
-        activityF2 = new double[numCode+1];
+        activityF2 = new double[numCode+1];//第二层初始化一个unCommited的结点
         
-        weight = new double[numCode+1][][];
+        weight = new double[numCode+1][][];//权重向量[F2节点的index][numSpace=4][]，W(ck)(j),ck中的k取值为1，2，3，指的是F1层的三个Field; j为F2层的index; 初始化只有一个uncommitted结点
         for (int j=0; j<=numCode; j++) {
             weight[j] = new double[numSpace][];
             for (int k=0; k<numSpace; k++) {
-                weight[j][k] = new double[numInput[k]];
-                for (int i=0; i<numInput[k]; i++)
+                weight[j][k] = new double[numInput[k]];//w[j][k][18,5,2,18]
+                for (int i=0; i<numInput[k]; i++)//对于uncommitted结点，每个[j][k][i]都为1
                     weight[j][k][i] = (double)1.0;
             }
         }
-        end_state = false;
+        end_state = false;//初始化endState=false
 
-        current = new int[2];
+        current = new int[2];//初始化?? current是什么???
     }
     
     public void setParameters (int AVTYPE, boolean immediateReward) {
 
-		if (AVTYPE==RFALCON) {
+		if (AVTYPE==RFALCON) {//如果用的是RFALCON，那么就不需要ε-greedy
     		QEpsilonDecay = (double)0.00000;
     		QEpsilon      = (double)0.00000;
     	}
@@ -134,39 +134,39 @@ public class FALCON extends AGENT {
 			QEpsilon      = (double)0.50000;
     	}
     	
-    	if (immediateReward)
+    	if (immediateReward)//如果是及时奖励,Discount factor γ=0.5
     		QGamma = (double) 0.5;
     	else
     		QGamma = (double) 0.9;    	
     }
     
-    public void stop()
+    public void stop()//停止Falcon网络的更新
     {
         end_state = true;
     }
 
     public void checkAgent (String outfile) {
-        PrintWriter pw_agent=null;
+        PrintWriter pw_agent=null;//PrintWriter Java用于写出的类
         boolean invalid;
         
         try {
             pw_agent = new PrintWriter (new FileOutputStream(outfile),true);
-        } catch (IOException ex) {}
+        } catch (IOException ex) {}//用来捕获IO异常
         
-        pw_agent.println ("Number of Codes : "+numCode);
+        pw_agent.println ("Number of Codes : "+numCode);//把结点的个数写入rule.txt
         for (int j=0; j<numCode; j++) {
             invalid=false;
             for (int i=0; i<numInput[ACTION]; i++)
-                if (weight[j][0][i]==1 && weight[j][ACTION][i]==1)
+                if (weight[j][0][i]==1 && weight[j][ACTION][i]==1)//?没懂为什么要这样来判定无效的Node，这样的意思是该结点J代表在i方向上的State为1(离mines或墙很近)，并且还走这个方向的话，显然是很差劲的Node(因为一定会撞到雷上)
                     invalid=true;
 
             if (invalid) {
                 pw_agent.println ("Code "+j);
                 for (int k=0; k<numSpace; k++) {
-                    pw_agent.print ("Space "+k+" : ");
+                    pw_agent.print ("Space "+k+" : ");//print不会换行,println会换行
                     for (int i=0; i<numInput[k]-1; i++)
                         pw_agent.print (weight[j][k][i]+", ");
-                    pw_agent.println (weight[j][k][numInput[k]-1]);
+                    pw_agent.println (weight[j][k][numInput[k]-1]);//输出最后一位,并换行
                 }
             }
         }
@@ -174,15 +174,15 @@ public class FALCON extends AGENT {
             pw_agent.close ();
     }
     
-    public void clean() {
+    public void clean() {//清除这些不好的Node
         int numClean=0;
         for (int j=0; j<numCode; j++)
             for (int i=0; i<numInput[ACTION]; i++)
                 if (weight[j][0][i]==1 && weight[j][ACTION][i]==1) {
-                    newCode[j]=true;
+                    newCode[j]=true;//把j结点置为Uncommitted Node
                     numClean++;
                 }
-        if (numClean>0)
+        if (numClean>0) 
             System.out.println (numClean+" bad code(s) removed.");      
     }
     
@@ -237,13 +237,13 @@ public class FALCON extends AGENT {
         for (int j=0; j<numCode; j++)
             new_newCode[j] = newCode[j];
         new_newCode[numCode] = true;
-        newCode = new_newCode;
+        newCode = new_newCode;//这么更新的意义何在????? 这一步就是因为新建了一个uncommitted 结点要把新节点加入到newcode中来
         
         double[] new_confidence = new double[numCode+1];
         for (int j=0; j<numCode; j++)
             new_confidence[j] = confidence[j];
         new_confidence[numCode] = initConfidence;
-        confidence = new_confidence;
+        confidence = new_confidence;//把新节点的Q值加入到confidence中
         
         double[][][] new_weight = new double[numCode+1][][];
         for (int j=0; j<numCode; j++)
@@ -259,33 +259,33 @@ public class FALCON extends AGENT {
     }
     
     public void reinforce () {
-        confidence[J] += ((double)1.0-confidence[J])*reinforce_rate;
+        confidence[J] += ((double)1.0-confidence[J])*reinforce_rate;//强化节点J，对于结点J，这个J被初始化为private int | Q = Q + (1 - Q) * α (α = 0.5)
     }
         
     public void penalize () {
-        confidence[J] -= confidence[J]*penalize_rate;
+        confidence[J] -= confidence[J]*penalize_rate;//惩罚结点J，Q = Q - Q * penalize_rate(penalize_rate=0.2)
     }
     
     public void decay () {
         for (int j=0; j<numCode; j++)
-            confidence[j] -= confidence[j]*decay_rate;
+            confidence[j] -= confidence[j]*decay_rate;//随着时间流逝，所有结点的可信度都会衰减
     }
 
-    public void prune () {
+    public void prune () {//剪枝
         for (int j=0; j<numCode; j++)
-            if (confidence[j]<threshold)
+            if (confidence[j]<threshold)//如果结点的可信度低于阈值，就把它取消，置为新节点
                 newCode[j]=true;
     }
             
-    public void purge () {
-        int numPurge=0;
+    public void purge () {//清洗
+        int numPurge=0;//用于计算F2层中newCode为True的结点个数
         
         for (int j=0; j<numCode; j++)
             if (newCode[j]==true)
                 numPurge++;
         
         if (numPurge>0) {
-            double[][][] new_weight = new double[numCode-numPurge+1][][];
+            double[][][] new_weight = new double[numCode-numPurge+1][][];//这些下标后面都有一个+1就是为了添加那个一直存在的uncommitted Node
             boolean[] new_newCode = new boolean[numCode-numPurge+1];
             double[]   new_confidence = new double[numCode-numPurge+1];
         
@@ -298,7 +298,7 @@ public class FALCON extends AGENT {
                     new_confidence[k] = confidence[j];  
                     k++;
                 }
-            new_weight[numCode-numPurge] = weight[numCode];
+            new_weight[numCode-numPurge] = weight[numCode];//把最后一个Uncommitted Node 加上
             new_newCode[numCode-numPurge] = newCode[numCode];
             new_confidence[numCode-numPurge] = confidence[numCode];
                 
@@ -306,13 +306,13 @@ public class FALCON extends AGENT {
             newCode = new_newCode;
             confidence = confidence;
             
-            numCode -= numPurge;
+            numCode -= numPurge;//结点剪枝
             activityF2 = new double[numCode+1];
             System.out.println (numPurge+" rule(s) purged.");
         }
     }
-    
-    public void setState( double [] sonar, double [] av_sonar, int bearing, double range ) 
+// 2020.1.3>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    public void setState( double [] sonar, double [] av_sonar, int bearing, double range ) //State的输入 10 + 0 + 8 + 0
     {
         int index;
 

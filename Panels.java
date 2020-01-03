@@ -23,7 +23,7 @@ class MazePalette
     public static int AV_Color_Index = 0;
 }
 
-class MazePanel extends JPanel implements ActionListener {
+class MazePanel extends JPanel implements ActionListener {//JPanel是Java图形界面工具包Swing的面板容器类，ActionListener是一个接口--动作监听器，ActionEvent通常在点击一个按钮或双击某个列表项或选中某个菜单时发生。
     final int size = 16;
     final int MAXSTEP = 500;
         
