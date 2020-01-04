@@ -45,14 +45,14 @@ public class FALCON extends AGENT {
     private double threshold=(double)0.01;//阈值
     private int    capacity=9999;//最大的结点数
     
-    private double beta=(double)1.0;//β
-    private double epilson=(double)0.001;//ε
+    private double beta=(double)1.0;//β,这是ART权重参数W的学习率
+    private double epilson=(double)0.001;//ε，用于增大Field1 的警戒参数，使其略大于 Mj-ck1 
     private double gamma[]={(double)1.0, (double)1.0,(double)1.0,(double)0.0};//γ 
     
     // Action enumeration，动作枚举
      
     private double alpha[]={(double)0.1,(double)0.1,(double)0.1};//这个是αk，选择参数 choice parameters
-    private double b_rho[]={(double)0.2,(double)0.2,(double)0.5,(double)0.0}; // fuzzy ART baseline vigilances  β_ρ
+    private double b_rho[]={(double)0.2,(double)0.2,(double)0.5,(double)0.0}; // fuzzy ART baseline vigilances  β_ρ  警戒参数
     private double p_rho[]={(double)0.0,(double)0.0,(double)0.0,(double)0.0}; // fuzzy ART performance vigilances  p_ρ ???这个参数目前还不知道什么意思
     
     // Direct Access
@@ -61,7 +61,7 @@ public class FALCON extends AGENT {
 	private double b_rho[]={(double)0.25, (double)0.1, (double)0.5, (double)0.0}; // fuzzy ART baseline vigilances   
 	private double p_rho[]={(double)0.25, (double)0.1, (double)0.5, (double)0.0}; // fuzzy ART performance vigilances
 	*/
-    // ART 2 Parameter Setting
+    // ART 2 Parameter Setting  ART2 是 ART1 的升级版，可以处理灰度输入
 	/*    
     private double beta=(double)0.5; 
     private double b_rho[]={(double)0.5,(double)0.2,(double)0.0,(double)0.0};
@@ -83,7 +83,7 @@ public class FALCON extends AGENT {
     public static boolean look_ahead =false;
     public static boolean Trace=true;
        
-    private NumberFormat df = NumberFormat.getInstance();   //返回当前默认语言环境的通用数值格式
+    private NumberFormat df = NumberFormat.getInstance();   //返回当前默认语言环境的通用数值格式,表示数字的格式化类，即：可以按照本地的风格习惯进行数字的显示。getInstance是一个函数，在java中，可以使用这种方式使用单例模式创建类的实例，所谓单例模式就是一个类有且只有一个实例
 		
     public FALCON ( int av_num ) {//初始化函数
     	
@@ -312,11 +312,11 @@ public class FALCON extends AGENT {
         }
     }
 // 2020.1.3>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    public void setState( double [] sonar, double [] av_sonar, int bearing, double range ) //State的输入 10 + 0 + 8 + 0
+    public void setState( double [] sonar, double [] av_sonar, int bearing, double range ) //State的输入 10 + 0 + (int)target的方向 + 0
     {
         int index;
 
-        for( int i = 0; i < ( numSonarInput / 2 ); i++ ) 
+        for( int i = 0; i < ( numSonarInput / 2 ); i++ ) //输入10个Sonar的信号
         {
             activityF1[0][i] = sonar[i];
             activityF1[0][i+numSonarInput/2] = 1 - sonar[i];
@@ -328,26 +328,26 @@ public class FALCON extends AGENT {
             activityF1[0][index+i] = av_sonar[i];
             activityF1[0][index+i+numSonarInput/2] = 1 - av_sonar[i];
         }
-        index += numAVSonarInput;
+        index += numAVSonarInput;//没有AvSonar的输入
 
         for( int i = 0; i < numBearingInput; i++ )
             activityF1[0][index+i] = (double)0.0;
         activityF1[0][index+bearing] = (double)1.0;
         index += numBearingInput;
 
-        for( int i = 0; i < ( numRangeInput / 2 ); i++ )
+        for( int i = 0; i < ( numRangeInput / 2 ); i++ )//也没有RangeInput的输入
         {
             activityF1[0][index+i] = range;
             activityF1[0][index+i+(numRangeInput/2)] = 1-range;
         }
     }
         
-    public void initAction () {
+    public void initAction () {//ACtion向量初始化为1
         for (int i=0; i<numInput[ACTION]; i++)
             activityF1[ACTION][i] = 1;
     }
 
-    public void init_path( int maxstep)
+    public void init_path( int maxstep)//path用来记录Agent行走的坐标
     {
         int k;
 
@@ -362,12 +362,12 @@ public class FALCON extends AGENT {
         }
 */    }
 
-    public void resetAction () {
+    public void resetAction () {//这种Rest意义何在??
         for (int i=0; i<numInput[ACTION]; i++)
             activityF1[ACTION][i] = 1-activityF1[ACTION][i];
     }
     
-    public void setAction (int action) {
+    public void setAction (int action) {//把当前动作设置为action
         for (int i=0; i<numInput[ACTION]; i++)
             activityF1[ACTION][i] = 0;
         activityF1[ACTION][action] = (double)1.0;
@@ -378,12 +378,12 @@ public class FALCON extends AGENT {
         activityF1[REWARD][1] = 1-r;
     }
     
-    public void initReward () {
+    public void initReward () {//Reward全部初始化为1
         activityF1[REWARD][0] = 1;
         activityF1[REWARD][1] = 1;
     }
     
-    public void setNewState( double [] sonar, double [] av_sonar, int bearing, double range ) 
+    public void setNewState( double [] sonar, double [] av_sonar, int bearing, double range ) //和SetState一样
     {
         int index;
 
@@ -413,17 +413,17 @@ public class FALCON extends AGENT {
         }
     }
         
-    public void computeChoice (int type, int numSpace) {
+    public void computeChoice (int type, int numSpace) {//type=0是FUZZART type=1是ART2,计算出F2层所有节点响应的选择函数，存入activityF2中
         double top, bottom;
         //Predicting
         if (type==FUZZYART) {
             for (int j=0; j<=numCode; j++) {
-                activityF2[j] = (double)0.0;
-                for (int k=0; k<numSpace; k++)  //Code activation
+                activityF2[j] = (double)0.0;//activityF2=(针对输入层F1[][]，F2层所有结点的给出响应后的选择函数T)
+                for (int k=0; k<numSpace; k++)  //Code activation，k:0->3
         //        	if (gamma[k]>0.0)
                 {
-                    top = 0;
-                    bottom = (double)alpha[k];
+                    top = 0;//选择函数T的分子
+                    bottom = (double)alpha[k];//选择函数T的分母
                     for (int i=0; i<numInput[k]; i++) {
                         top += Math.min (activityF1[k][i],weight[j][k][i]); //fuzzy AND operation
                         bottom += weight[j][k][i];
@@ -448,7 +448,7 @@ public class FALCON extends AGENT {
         }
     }    
 
-    public int doChoice () {
+    public int doChoice () {//选出F2中响应函数最大的值
         double max_act=(double)-1.0;
         int   c=-1;
         
@@ -460,18 +460,18 @@ public class FALCON extends AGENT {
         return (c);
     }
     
-    public boolean isNull (double[] x, int n) {
+    public boolean isNull (double[] x, int n) {//用来判断[]x是否全部为0
         for (int i=0; i<n; i++) 
             if (x[i]!=0) return (false);
         return (true);
     }
     
-    public double doMatch (int k, int j) {  //Learning：Template matching
+    public double doMatch (int k, int j) {  //Learning：Template matching,对第k个输入Field作匹配，依次产生m^j^c1, m^j^c2,m^j^c3
 
         double m=(double)0.0;
         double denominator = (double)0.0; //分母
         
-        if (isNull(activityF1[k],numInput[k]))
+        if (isNull(activityF1[k],numInput[k]))//如果Xck全部为0，那就返回匹配函数Mjck=1，这样做是为了防止分母为0
             return (1);
             
         for (int i=0; i<numInput[k]; i++) {
@@ -479,23 +479,23 @@ public class FALCON extends AGENT {
             denominator += activityF1[k][i];
         }
 //      System.out.println ("Code "+j+ " match "+m/denominator);
-        if (denominator==0)
+        if (denominator==0)//再次防止分母为0
             return (1);
         return (m/denominator);
     }
     
-    public void doComplete (int j, int k) {
+    public void doComplete (int j, int k) {// ActivityF1[k]<<======weight[j][k]
         for (int i=0; i<numInput[k]; i++)
             activityF1[k][i] = weight[j][k][i];
     }
 
-    public void doInhibit (int j, int k) {
+    public void doInhibit (int j, int k) {//inhibit 抑制?
         for (int i=0; i<numInput[k]; i++)
             if (weight[j][k][i]==1)
                 activityF1[k][i] = 0;
     }
         
-    public int doSelect (int k) {
+    public int doSelect (int k) {//选择ACtion Field 中获胜的动作，把最大可能的动作置为1, 其余的置为0
         int   winner=0;
         double max_act=0;
                     
@@ -513,12 +513,12 @@ public class FALCON extends AGENT {
     }
             
     public void doLearn(int J, int type) {
-        double rate;
+        double rate;//学习率
         
-        if (!newCode[J] || numCode<capacity) {
+        if (!newCode[J] || numCode<capacity) {//如果Jcommitted node || J 为 Uncommitted node 但是 当前容量还足够开拓新结点
 
-        	if (newCode[J]) rate=1;
-        	else rate=beta; //*Math.abs(r-reward);
+        	if (newCode[J]) rate=1;//如果是新节点，那么就快速学习，学习率为1 ,即 Wj-ck=X-ck
+        	else rate=beta; //*Math.abs(r-reward);β=1
             
 	        for (int k=0; k<numSpace; k++) {
             for (int i=0; i<numInput[k]; i++) {
@@ -538,7 +538,7 @@ public class FALCON extends AGENT {
         }
     }
 
-    public void doOverwrite(int J) {
+    public void doOverwrite(int J) {//重写函数，对于J结点 w[j][k][i] <<===== activityF1[k][i]
 
         for (int k=0; k<numSpace; k++)
         {
@@ -547,14 +547,14 @@ public class FALCON extends AGENT {
         }
     }
 
-    public void displayActivity(int k) {
+    public void displayActivity(int k) {//输出ActivityF1[k]
         System.out.print ("Space "+k+" : ");
         for (int i=0; i<numInput[k]-1; i++)
             System.out.print (df.format(activityF1[k][i])+", ");
         System.out.println (df.format(activityF1[k][numInput[k]-1]));      
     }
 
-    public void displayActivity2( PrintWriter pw, int k ) 
+    public void displayActivity2( PrintWriter pw, int k ) //把ActivityF1[k]写入文件中
     {
         pw.print ( "AV" + agentID + " Space "+k+" : " );
         for (int i=0; i<numInput[k]-1; i++)
@@ -562,17 +562,17 @@ public class FALCON extends AGENT {
         pw.println (df.format(activityF1[k][numInput[k]-1]));      
     }
 
-    public void displayVector(String s, double[] x, int n) {
+    public void displayVector(String s, double[] x, int n) {//输出向量[]x
         System.out.print (s+ " : ");
         for (int i=0; i<n-1; i++)
             System.out.print (df.format(x[i])+", ");
         System.out.println (df.format(x[n-1]));
     }
 
-    public void displayState (String s, double[] x, int n) {
+    public void displayState (String s, double[] x, int n) {//输出状态State (10+8)
         System.out.print (s+ "   Sonar: [");
         int index=0;
-        for (int i=0; i<numSonarInput; i++)
+        for (int i=0; i<numSonarInput; i++)//输出10个Sonar输入
             System.out.print (df.format(x[index+i])+", ");
         System.out.print (df.format(x[index+numSonarInput-1]));
         
@@ -584,7 +584,7 @@ public class FALCON extends AGENT {
         System.out.println (df.format(x[index+numBearingInput-1]) + "]");
                 
     }                    
-    public void displayVector2( PrintWriter pw, String s, double[] x, int n ) 
+    public void displayVector2( PrintWriter pw, String s, double[] x, int n ) //把向量写入文件
     {
         pw.print( "AV" + agentID + " " + s + " : " );
         for (int i=0; i<n-1; i++)
@@ -592,13 +592,13 @@ public class FALCON extends AGENT {
         pw.println (df.format(x[n-1]));
     }
                     
-    public double doSearchQValue(int mode, int type) {
+    public double doSearchQValue(int mode, int type) {//according to state && action to map reward
         boolean reset=true, perfectMismatch=false;
         double     QValue=(double)0.0;
         double[] rho = new double[4];
         double[] match = new double[4];
         
-        if (mode==INSERT)
+        if (mode==INSERT)//三种警戒参数
             for (int k=0; k<numSpace; k++)
                 rho[k] = 1;
         else if (mode==LEARN)
@@ -613,28 +613,28 @@ public class FALCON extends AGENT {
     
         while (reset && !perfectMismatch) {
             reset = false;
-            J = doChoice (); //Code competition
+            J = doChoice (); //Code competition,函数返回获胜的结点的Index
             for (int k = 0; k < numSpace; k++ )
-                match[k] = doMatch(k,J);    //Learning：Template matching
-            if (match[CURSTATE]<rho[CURSTATE]||match[ACTION]<rho[ACTION]||match[REWARD]<rho[REWARD]) {
-                if (match[CURSTATE]==1) {
-                    perfectMismatch=true;
+                match[k] = doMatch(k,J);    //Learning：Template matching, 把3 个 Field 的匹配函数 m 算出来存入 match[]中
+            if (match[CURSTATE]<rho[CURSTATE]||match[ACTION]<rho[ACTION]||match[REWARD]<rho[REWARD]) {//如果三者之中有一个不满足警戒参数
+                if (match[CURSTATE]==1) {//如果说match[0] = 1 则证明所有的结点都没能匹配上当前的状态，那这就是一个新状态
+                    perfectMismatch=true;//完美不匹配
                     if (Trace) System.out.println ("Perfect mismatch. Overwrite code "+J);
                 }
                 else {
-                    activityF2[J] = (double)-1.0;
+                    activityF2[J] = (double)-1.0;//把结点 J 排除在外, rechoose a node 
                     reset = true;
                 
-                    for (int k=0; k<1; k++) // raise vigilance of State
+                    for (int k=0; k<1; k++) // raise vigilance of State 对
                         if (match[k]>rho[k])
                             rho[k] = Math.min (match[k]+epilson,1);
                 }
             }   
         }
         if (mode==PERFORM) {
-            doComplete (J,REWARD);
-            if(activityF1[REWARD][0]==activityF1[REWARD][1] && activityF1[REWARD][0]==1){ //initialize Q value
-                if (INTERFLAG)      QValue= (double)initialQ;
+            doComplete (J,REWARD);//把选中结点的权值W对应的Reward 分量赋值给 ActivityF1[Reward]
+            if(activityF1[REWARD][0]==activityF1[REWARD][1] && activityF1[REWARD][0]==1){ //initialize Q value，如果 选中的结点是 Uncommitted node 就会满足这个条件
+                if (INTERFLAG)      QValue= (double)initialQ;//initialQ=0.5
                 else                QValue= (double)initialQ;
             }
             else
@@ -646,7 +646,7 @@ public class FALCON extends AGENT {
         }
         return (QValue);
     }
-    
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>2020.1.4>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     public double getMaxQValue( int method, boolean train, Maze maze )
     {
     	int QLEARNING=0;
