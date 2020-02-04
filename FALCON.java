@@ -46,7 +46,7 @@ public class FALCON extends AGENT {
     private int    capacity=9999;//最大的结点数
     
     private double beta=(double)1.0;//β,这是ART权重参数W的学习率
-    private double epilson=(double)0.001;//ε，用于增大Field1 的警戒参数，使其略大于 Mj-ck1 
+    private double epilson=(double)0.001;//ε，用于增大Field1 的警戒参数，使其略大于 Mj-ck1
     private double gamma[]={(double)1.0, (double)1.0,(double)1.0,(double)0.0};//γ 
     
     // Action enumeration，动作枚举
@@ -79,9 +79,9 @@ public class FALCON extends AGENT {
     
     public static boolean forgetting =false;    
     public static boolean INTERFLAG  =false;
-    public static boolean detect_loop=false;
+    public static boolean detect_loop=false; //回路检测
     public static boolean look_ahead =false;
-    public static boolean Trace=true;
+    public static boolean Trace=true; //是否记录路径
        
     private NumberFormat df = NumberFormat.getInstance();   //返回当前默认语言环境的通用数值格式,表示数字的格式化类，即：可以按照本地的风格习惯进行数字的显示。getInstance是一个函数，在java中，可以使用这种方式使用单例模式创建类的实例，所谓单例模式就是一个类有且只有一个实例
 		
@@ -316,7 +316,7 @@ public class FALCON extends AGENT {
     {
         int index;
 
-        for( int i = 0; i < ( numSonarInput / 2 ); i++ ) //输入10个Sonar的信号
+        for( int i = 0; i < ( numSonarInput / 2 ); i++ ) //输入10个Sonar的信号，numSonarInput = 10
         {
             activityF1[0][i] = sonar[i];
             activityF1[0][i+numSonarInput/2] = 1 - sonar[i];
@@ -362,7 +362,7 @@ public class FALCON extends AGENT {
         }
 */    }
 
-    public void resetAction () {//这种Rest意义何在??
+    public void resetAction () {//这种Rest意义何在??,把动作的值反转
         for (int i=0; i<numInput[ACTION]; i++)
             activityF1[ACTION][i] = 1-activityF1[ACTION][i];
     }
@@ -389,7 +389,7 @@ public class FALCON extends AGENT {
 
         for( int i = 0; i < numSonarInput/2; i++ ) 
         {
-            activityF1[NEWSTATE][i] = sonar[i];
+            activityF1[NEWSTATE][i] = sonar[i]; //Newsate = 3 curstate = 0
             activityF1[NEWSTATE][i+(numSonarInput/2)] = 1 - sonar[i];
         }
         index = numSonarInput;
@@ -415,11 +415,11 @@ public class FALCON extends AGENT {
         
     public void computeChoice (int type, int numSpace) {//type=0是FUZZART type=1是ART2,计算出F2层所有节点响应的选择函数，存入activityF2中
         double top, bottom;
-        //Predicting
-        if (type==FUZZYART) {
+        //Predicting numSpace的取值范围 1 - 3
+        if (type==FUZZYART) { //FUZZYART = 0 
             for (int j=0; j<=numCode; j++) {
                 activityF2[j] = (double)0.0;//activityF2=(针对输入层F1[][]，F2层所有结点的给出响应后的选择函数T)
-                for (int k=0; k<numSpace; k++)  //Code activation，k:0->3
+                for (int k=0; k<numSpace; k++)  //Code activation，k:0->3 k从0到numSpace
         //        	if (gamma[k]>0.0)
                 {
                     top = 0;//选择函数T的分子
@@ -434,7 +434,7 @@ public class FALCON extends AGENT {
 //              System.out.println( "F["+j+"] = " + activityF2[j] );
             }
         } 
-        else if (type==ART2) {
+        else if (type==ART2) { //ART2 = 1
             for (int j=0; j<=numCode; j++) {
                 activityF2[j] = (double)0.0;
                 for (int k=0; k<numSpace; k++) {
@@ -448,7 +448,7 @@ public class FALCON extends AGENT {
         }
     }    
 
-    public int doChoice () {//选出F2中响应函数最大的值
+    public int doChoice () {//选出F2中响应函数最大的节点c
         double max_act=(double)-1.0;
         int   c=-1;
         
@@ -495,7 +495,7 @@ public class FALCON extends AGENT {
                 activityF1[k][i] = 0;
     }
         
-    public int doSelect (int k) {//选择ACtion Field 中获胜的动作，把最大可能的动作置为1, 其余的置为0
+    public int doSelect (int k) {//选择ACtion Field 中获胜的动作，把最大可能的动作置为1, 其余的置为0,返回获胜者 winner
         int   winner=0;
         double max_act=0;
                     
@@ -512,7 +512,7 @@ public class FALCON extends AGENT {
         return(winner);
     }
             
-    public void doLearn(int J, int type) {
+    public void doLearn(int J, int type) { //对最相似的节点J进行学习
         double rate;//学习率
         
         if (!newCode[J] || numCode<capacity) {//如果Jcommitted node || J 为 Uncommitted node 但是 当前容量还足够开拓新结点
@@ -595,25 +595,25 @@ public class FALCON extends AGENT {
     public double doSearchQValue(int mode, int type) {//according to state && action to map reward
         boolean reset=true, perfectMismatch=false;
         double     QValue=(double)0.0;
-        double[] rho = new double[4];
-        double[] match = new double[4];
+        double[] rho = new double[4]; //ρ[4] 存放警戒参数
+        double[] match = new double[4]; //match[4]存放四个匹配函数
         
-        if (mode==INSERT)//三种警戒参数
+        if (mode==INSERT)//三种警戒参数 INSERT = 0
             for (int k=0; k<numSpace; k++)
-                rho[k] = 1;
-        else if (mode==LEARN)
+                rho[k] = 1; // 1 1 1 1 
+        else if (mode==LEARN) // LEARN = 1
             for (int k=0; k<numSpace; k++)
-                rho[k] = b_rho[k];
-        else if (mode==PERFORM)
-            for (int k=0; k<numSpace; k++)
-                rho[k] = p_rho[k];
+                rho[k] = b_rho[k]; // 0.2 0.2 0.5 0
+        else if (mode==PERFORM) //predict阶段用不着警戒参数，Learning阶段才用 PERFORM = 2
+            for (int k=0; k<numSpace; k++) 
+                rho[k] = p_rho[k]; // 0 0 0 0 
 
 //        System.out.println ("Running searchQValue:");
-        computeChoice(type,2); //map from state action to reward
+        computeChoice(type,2); //map from state action to reward |||| numSpace = 2 代表 reward
     
         while (reset && !perfectMismatch) {
             reset = false;
-            J = doChoice (); //Code competition,函数返回获胜的结点的Index
+            J = doChoice (); //Code competition,函数返回获胜的结点即T值最大的点的Index J
             for (int k = 0; k < numSpace; k++ )
                 match[k] = doMatch(k,J);    //Learning：Template matching, 把3 个 Field 的匹配函数 m 算出来存入 match[]中
             if (match[CURSTATE]<rho[CURSTATE]||match[ACTION]<rho[ACTION]||match[REWARD]<rho[REWARD]) {//如果三者之中有一个不满足警戒参数
@@ -621,18 +621,18 @@ public class FALCON extends AGENT {
                     perfectMismatch=true;//完美不匹配
                     if (Trace) System.out.println ("Perfect mismatch. Overwrite code "+J);
                 }
-                else {
+                else { //如果3个filed发生了不匹配并且当前获胜的节点J不是uncommitted Node
                     activityF2[J] = (double)-1.0;//把结点 J 排除在外, rechoose a node 
                     reset = true;
                 
-                    for (int k=0; k<1; k++) // raise vigilance of State 对
+                    for (int k=0; k<1; k++) // raise vigilance of State 对 m^j^c0也就是Filed Curstate 对应的警戒参数提升epilson 
                         if (match[k]>rho[k])
                             rho[k] = Math.min (match[k]+epilson,1);
                 }
             }   
         }
-        if (mode==PERFORM) {
-            doComplete (J,REWARD);//把选中结点的权值W对应的Reward 分量赋值给 ActivityF1[Reward]
+        if (mode==PERFORM) { //PERFORM阶段是 F2 层的权值对 F1层的参数产生影响，对应函数doComplate
+            doComplete (J,REWARD);//把选中结点的权值W对应的Reward 分量赋值给 ActivityF1[Reward] F2 -> F1
             if(activityF1[REWARD][0]==activityF1[REWARD][1] && activityF1[REWARD][0]==1){ //initialize Q value，如果 选中的结点是 Uncommitted node 就会满足这个条件
                 if (INTERFLAG)      QValue= (double)initialQ;//initialQ=0.5
                 else                QValue= (double)initialQ;
@@ -640,42 +640,42 @@ public class FALCON extends AGENT {
             else
                 QValue = activityF1[REWARD][0];
         }   
-        else if (mode==LEARN) {
-            if (!perfectMismatch) doLearn(J,type);
-            else doOverwrite (J);
+        else if (mode==LEARN) { //LEARN阶段是 F1 层的权值对 F2 层的参数产生影响，对应函数doOverWrite
+            if (!perfectMismatch) doLearn(J,type); //如果选中的节点J不是新节点就对节点J的权重进行学习
+            else doOverwrite (J); //如果选中的节点J是新节点就直接把 F1 层的权重 -> F2层的新节点J
         }
         return (QValue);
     }
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>2020.1.4>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    public double getMaxQValue( int method, boolean train, Maze maze )
-    {
-    	int QLEARNING=0;
+    public double getMaxQValue ( int method, boolean train, Maze maze ) //输入参数为 Maze-地图类 method- Q(0) or Sarsa(1)  train-是否是训练模式
+    { //函数作用应该是求出最大化的Q值
+    	int QLEARNING=0; //Q-learning 和 sarsa 两种算法
      	int SARSA=1;
      	double Q=(double)0.0;
         
-        if( maze.isHitMine( agentID ) )   //case hit mine
+        if( maze.isHitMine( agentID ) )   //case hit mine agentID是Agent编号，每一个Agent都蕴含着一个FALCON网络
             Q=0.0;
         else if( maze.isHitTarget( agentID ) )
             Q=1.0; //case reach target
 		else {            
-        	if(method==QLEARNING){                   //q learning
-            	for(int i=0;i<numAction;i++){
-                	setAction(i);
-                	double tmp_Q=doSearchQValue(PERFORM,FUZZYART);              
+        	if(method==QLEARNING){ //q learning TDerr = r + γmaxQ'(s',a') - Q(s,a) 因此需要根据当前状态求出下一状态和动作的最大Q值
+            	for(int i=0;i<numAction;i++){ //numAction = 5 根据当前状态S2求出所有可选动作中Q值最大的动作，此时还处在状态S2还不知道真实地A2选择了哪个动作
+                	setAction(i); //依次把F1层 Action Field 设置为 五个动作，查看每个动作能获得的Q值
+                	double tmp_Q=doSearchQValue(PERFORM,FUZZYART); // perform 阶段是 F2对F1层产生影响，doSearchQvalue函数 根据 state && action 确定 reward             
                 	if(tmp_Q>Q) Q=tmp_Q;
             	}
             } 
-            else {                               //sarsa
-            	int next_a = doSelectAction( train, maze );
+            else {                               //sarsa 根据state来选择节点J从而获得 J节点的Action
+            	int next_a = doSelectAction( train, maze );  // 这一步做的是仅仅根据状态state选择动作 S1 -> A1 （1 - ε）概率选择Q最大的动作，ε概率随机选择动作
             	setAction(next_a);  // set action
-	            Q=doSearchQValue(PERFORM,FUZZYART);
+	            Q=doSearchQValue(PERFORM,FUZZYART); //doSearchQValue 根据state和action 来选择节点J从而获得 J节点的Reward
 	        }
         }       
 
         return Q;
     }
     
-	public int doSearchAction(int mode, int type) {
+	public int doSearchAction(int mode, int type) { //根据 state 来映射动作
 		boolean reset=true, perfectMismatch=false;
 		int     action=0;
 		double[] rho   = new double[4];
@@ -750,8 +750,8 @@ public class FALCON extends AGENT {
 		if (mode==PERFORM) {
 			if (newCode[J]) action= -1;
 			else {
-				doComplete (J,ACTION);
-				action = doSelect (ACTION);
+				doComplete (J,ACTION);//把选中结点的权值W对应的Action 分量赋值给 ActivityF1[Action] F2 -> F1
+				action = doSelect (ACTION); //选择ActivityF1[Action]节点中最大的动作，并且获胜的动作取全部1，其余的均置为 0 
 			}
 		}	
 		else if (mode==LEARN) {
@@ -762,38 +762,38 @@ public class FALCON extends AGENT {
 		return (action);
 	}
 
-    private int loop_path()
+    private int loop_path() //判断路径是否成换
     {
         int k;
         
-        for( k = ( step - 1 ); k >= 0; k-- )
-            if( ( current[0] == path[k][0] ) && ( current[1] == path[k][1] ) )
+        for( k = ( step - 1 ); k >= 0; k-- ) //step是agent当前已经走了多少步
+            if( ( current[0] == path[k][0] ) && ( current[1] == path[k][1] ) ) //当前的坐标是否和之前的坐标重合
                 return( k );
         return( -1 );
     }
 
-    private int get_except_action()
+    private int get_except_action() //如果当前的Agent成环转圈圈了，求出发生回路点的下一步所选择的动作
     {
         int rep_step;
         int a;
         int [] new_pos;
 
         new_pos = new int[2];
-        rep_step = loop_path();
+        rep_step = loop_path(); //记录下和当前节点成环的Path之前的节点
         if( rep_step < 0 )
             return( -1 );
-        for( a = 0; a < numAction; a++ )
+        for( a = 0; a < numAction; a++ ) // 这一步应该是求出环路的交界点rep_Step的下一步所选择的动作
         {
-            virtual_move( a - 2, new_pos );
+            virtual_move( a - 2, new_pos ); //new_pos变成了current按照a动作移动后的位置
             if( ( new_pos[0] == path[rep_step+1][0] ) && ( new_pos[1] == path[rep_step+1][1] ) )
                 return( a );
         }
         return( -1 );
     }
 
-	public int doSelectAction (boolean train, Maze maze){
+	public int doSelectAction (boolean train, Maze maze){ // 根据ε-greedy选择一个最可能的动作 sarsa算法中选择下一个s'的a' 输入参数为 train-是否是训练 maze-地图类
 		
-		double[] qValues=new double[numAction];
+		double[] qValues=new double[numAction]; //numAction = 5
 		int selectedAction = -1;
 		
 			
@@ -803,17 +803,17 @@ public class FALCON extends AGENT {
 			qValues[i]=doSearchQValue(PERFORM,FUZZYART);
 		}
 				    
-	    double maxQ = -Double.MAX_VALUE;
+	    double maxQ = -Double.MAX_VALUE; //最小值
 	    int[] doubleValues = new int[qValues.length];
-	    int maxDV = 0;
-	    
+	    int maxDV = 0; //代表有多个动作的Q值相同
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>2020.2.3>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	    //Explore
-		if ( Math.random() < QEpsilon && train==true ) {
+		if ( Math.random() < QEpsilon && train==true ) { //如果刚好随机到ε内 直接随机选择
 			selectedAction = -1;
 	    }
-	    else {
+	    else { // ε-greddy
 		    
-			for( int action = 0 ; action < qValues.length ; action++ ) {
+			for( int action = 0 ; action < qValues.length ; action++ ) { //从所有备选动作中选择Q值最大的动作
 			  /*  if(maze.nextReward(action-2)>0.5){ //add in rules
 			    	selectedAction = action;
 			    	maxDV=0;
@@ -831,7 +831,7 @@ public class FALCON extends AGENT {
 			    }
 			}
 			
-			if( maxDV > 0 ) {
+			if( maxDV > 0 ) { //多个动作Q值相同且都为最大则随机选一个
 			    int randomIndex = (int) ( Math.random() * ( maxDV + 1 ) );
 			    selectedAction = doubleValues[ randomIndex ];
 			}
@@ -841,7 +841,7 @@ public class FALCON extends AGENT {
 	    	if(Trace)
 	    		System.out.println("random action selected!");
 	
-			selectedAction = (int) (Math.random() * qValues.length);
+			selectedAction = (int) (Math.random() * qValues.length); //如果是探索操作则随便选择一个动作
 	    }
 		return selectedAction;
 	}    
@@ -868,7 +868,7 @@ public class FALCON extends AGENT {
         		qValues[i] = -1.0;
 //      			System.out.println ( "action " + i + " invalid");    
         	}
-        	else {  //agent没有到边界外
+        	else {  //agent没有到边界外，在动作i对应的方向上还能继续移动
 	            setAction( i );     //设置动作
     	        qValues[i] = doSearchQValue( PERFORM, FUZZYART );   //计算q值
     	        validActions[maxVA] = i;
@@ -889,7 +889,7 @@ public class FALCON extends AGENT {
         // Select random action if all qValues == 0 or exploring.
             if(Trace) 
             	System.out.println("random action selected!");
-            int randomIndex = (int) (Math.random() * maxVA);
+            int randomIndex = (int) (Math.random() * maxVA); //如果是探索操作，则在可以选择的动作maxVA里随机选择一个
             selectedAction = validActions[randomIndex];;
         }
         else {
@@ -953,8 +953,8 @@ public class FALCON extends AGENT {
 
 
         if (Math.random() < QEpsilon ||
-        	(selectedAction=doSearchAction (PERFORM, FUZZYART))==-1 || // no close match
-        	maze.withinField (agt, selectedAction-2)==false) { // not valid action
+        	(selectedAction=doSearchAction (PERFORM, FUZZYART))==-1 || // no close match，只能创建一个新节点
+        	maze.withinField (agt, selectedAction-2)==false) { // not valid action，或者这个选择的新动作无法执行，否则会跑出地图外
  				
             if (Trace) 
             	System.out.println("random action selected!");
@@ -990,7 +990,7 @@ public class FALCON extends AGENT {
         return selectedAction;
     }
 
-    public int[] findKMax (double[] v, int n, int K) {
+    public int[] findKMax (double[] v, int n, int K) { //寻找v中前k个最大值
         int   temp;
         double tempf;
         int[] maxIndex = new int[K];
@@ -1010,20 +1010,20 @@ public class FALCON extends AGENT {
         return(maxIndex);
     }
     
-    public boolean doCompleteKMax (int[] k_max) {
+    public boolean doCompleteKMax (int[] k_max) { //k_max数组里存了F2层中数值最大的3个Node的下标
         int actualK, j;
         boolean predict=false;
         
-        if (numCode<KMax)
+        if (numCode<KMax) //KMax = 3
             actualK=numCode;
         else
             actualK=KMax;
             
-        for (int i=0; i<numInput[ACTION]; i++) {
+        for (int i=0; i<numInput[ACTION]; i++) { //五个动作ACtion，对于每个动作 i 如果 F2层的T函数的值大于0.9 就对F1层的Actin Field做更新
             activityF1[ACTION][i] = 0;
-            for (int k=0; k<actualK; k++) {
+            for (int k=0; k<actualK; k++) { //k_max数组中的值
                 j = k_max[k];
-                if (activityF2[j]>0.9) {     // threshold of activity for predicting
+                if (activityF2[j]>0.9) {     // threshold of activity for predicting 
                     activityF1[ACTION][i] += activityF2[j] * 
                     (weight[j][REWARD][0]*weight[j][ACTION][i]                  //good move
                                -(1-weight[j][REWARD][0])*weight[j][ACTION][i]); //bad move
@@ -1034,7 +1034,7 @@ public class FALCON extends AGENT {
         return( predict );
     }
             
-    public int doSelectDualAction(int type) {
+    public int doSelectDualAction(int type) { //双重(Dual)动作
         boolean reset=true;
         int     action=0;
         double[] rho = new double[4];
@@ -1042,7 +1042,7 @@ public class FALCON extends AGENT {
         int[]   k_max;
         
         for (int k=0; k<numSpace; k++)
-            rho[k] = p_rho[k];
+            rho[k] = p_rho[k]; //0 0 0 0 
         
         if (Trace) {
             System.out.println ("Input activities");
@@ -1056,11 +1056,11 @@ public class FALCON extends AGENT {
 //          System.out.println ("F2["+j+"]= "+activityF2[j]);
 
         if (numCode>KMax) {
-            k_max = findKMax (activityF2, numCode, KMax);
+            k_max = findKMax (activityF2, numCode, KMax); //从F2层中选择T函数值最大的KMax(3)个Node的下标
 //          for (int j=0; j<K; j++)
 //              System.out.println ("k_max["+j+"]= "+k_max[j]);
-            if (!doCompleteKMax (k_max))
-                J = doChoice();
+            if (!doCompleteKMax (k_max) ) //如果该函数返回的是False
+                J = doChoice(); //Code competition,函数返回获胜的结点即T值最大的点的Index J
         }
         else
             J = doChoice();
@@ -1069,8 +1069,8 @@ public class FALCON extends AGENT {
         return (action);
     }
 
-    public void virtual_move( int a, int [] res ) {
-                
+    public void virtual_move( int a, int [] res ) { //虚拟移动，[]res传入的是new int[2] a是传入的 a - 2 a∈[0, 4] a - 2 就是做了下转化
+    // 函数作用对当前的坐标current 和 当前朝向 bearing 计算经过 动作a后的朝向 并且 按当前方向移动一个单位            
     int k;
     int bearing = ( currentBearing + a + 8 ) % 8;
 
